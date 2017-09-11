@@ -23,10 +23,12 @@ def process(rdd):
 
     sqlContext = getSqlContextInstance(rdd.context)
     if rdd.count() >0 :
-        rowRdd=rdd.map(lambda y: Row(src_sys=y['src_sys'], netid=y['netid'], src_uid=y['src_uid'], telephone_num=y['telephone_num']))
+        rowRdd=rdd.map(lambda y: Row(src_sys=y['src_sys'], netid=y['netid'], src_uid=y['src_uid'], telephone_num=y['telephone_num'],telephone_type=y['telephone_type'], type_desc=y['type_desc'],src_ts=y['src_ts']))
         jsonDataFrame = sqlContext.createDataFrame(rowRdd)
         jsonDataFrame.show()
         jsonDataFrame.printSchema()
+        jsonDataFrame.write.format("org.apache.spark.sql.cassandra").mode("append").options(table= "telephone_num",
+                                                                                            keyspace="dev_datalake").save();
     else :
         print("RDD is EMPTY")
 
