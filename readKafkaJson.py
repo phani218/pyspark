@@ -9,15 +9,21 @@ from __future__ import print_function
 import sys
 import json
 
+
 from pyspark import SparkContext
 from pyspark.streaming import StreamingContext
 from pyspark.streaming.kafka import KafkaUtils
 from pyspark.sql import Row, SQLContext
 
+
+
 def getSqlContextInstance(sparkContext):
     if ('sqlContextSingletonInstance' not in globals()):
         globals()['sqlContextSingletonInstance'] = SQLContext(sparkContext)
     return globals()['sqlContextSingletonInstance']
+
+
+
 
 def process(rdd):
 
@@ -27,7 +33,11 @@ def process(rdd):
         jsonDataFrame = sqlContext.createDataFrame(rowRdd)
         jsonDataFrame.show()
         jsonDataFrame.printSchema()
+        print("Writing to Telephone Table")
         jsonDataFrame.write.format("org.apache.spark.sql.cassandra").mode("append").options(table= "telephone_num",
+                                                                                            keyspace="dev_datalake").save();
+        print("Writing to Telephone Log Table")
+        jsonDataFrame.write.format("org.apache.spark.sql.cassandra").mode("append").options(table="log_telephone_num",
                                                                                             keyspace="dev_datalake").save();
     else :
         print("RDD is EMPTY")
@@ -35,7 +45,8 @@ def process(rdd):
 def createContext():
     print("Creating new context")
     sc = SparkContext(appName="PythonStreamingKafkaWordCount")
-    sc.setLogLevel("WARN")
+    log4j = sc._jvm.org.apache.log4j
+    log4j.LogManager.getRootLogger().setLevel(log4j.Level.ERROR)
     ssc = StreamingContext(sc, 10)
     ssc.checkpoint('hdfs:///hdfsproc/pyspark_checkpoint_2')
     brokers = sys.argv[1]
